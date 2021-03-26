@@ -1,0 +1,32 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="v8在解析JS的过程不会对整个脚本都进行解析编译，因为不是所有的语句都会立即执行。v8处于对效率的考虑，将js分成toplevel和non toplevel两部分，普通语句和函数声明部分是toplevel，函数内部定义是non toplevel"><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/noise.css"><title>v8 notes | /home/5n1p3r0010</title><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><meta name="generator" content="Hexo 5.4.0"></head><body><article class="wrapper"><div class="post-main"><div class="nav"><nav class="container"><a class="sidebar-nav-item active" href="/">Home</a><a class="sidebar-nav-item" href="/archives">Archives</a></nav><div class="container post-meta"><div class="post-time">2020-03-17</div></div></div><div class="container post-header"><h1>v8 notes</h1></div><div class="container post-content"><p>v8在解析JS的过程不会对整个脚本都进行解析编译，因为不是所有的语句都会立即执行。v8处于对效率的考虑，将js分成toplevel和non toplevel两部分，普通语句和函数声明部分是toplevel，函数内部定义是non toplevel</p>
+<p>V8在对JS进行解析的过程中，Non Toplevel部分仅仅被预解析，这里的预解析指的是仅仅对其进行语法检查，不会解析成抽象语法树，更不会被编译。 而Toplevel部分会被解释器完全解析，生成抽象语法树并最终生成本地代码，这个时侯编译器并不进行代码优化，唯一的任务就是尽可能快的生成本地代码。</p>
+<p>对于Non Toplevel部分，即函数体部分。只有在该函数被调用的时候才会被编译成本地代码。如果在运行过程中该函数被编译器认定为热门函数，那么它将会被优化。</p>
+<p>JavaScript是一种动态类型语言，在编译时并不能准确知道变量的类型，只可以在运行时确定，这就不像c++或者java等静态类型语言，在编译时候就可以确切知道变量的类型。因此V8 利用动态创建隐藏内部类的方式动态地将属性的内存地址记录在对象内，从而提升整体的属性访问速度。每当为某个对象添加新的属性时，V8 会自动修正其隐藏内部类。隐藏类相同的对象可以共用相同的优化后的代码。</p>
+<p>优化和去优化</p>
+<p>function运行足够次数后v8视为hot function使用TurboFan进行解析编译成优化的汇编代码inline cache?保存，并保存此次优化函数的参数类型BinaryOp type，后续调用此函数是否使用优化的汇编代码取决于参数类型（和返回值类型，如smi溢出导致用float保存smi时也不会调用优化函数）；参数类型不一致则去优化重新解析编译函数。</p>
+<p>v8最开始采用随机采样的方式来决定函数是否为hot function（桌面版每隔1ms，移动版每隔5ms）。采样时向运行线程发送SIGPROF信号终止其运行，将运行栈的一些栈顶栈帧视为样本，如果发现有函数运行了数次，将其标记为待优化的热函数。这样做显而易见的缺点就是随机性太强，由于随机性太强带来其他的不稳定性。</p>
+<p>现在的做法是在函数full compile(快速生成的字节码)时初始化一个递减计数器，计数器是否递减取决于函数的大小或者循环体的大小（足够小时才递减），当计数器递减为0时函数标记为待优化。</p>
+<p>当函数被标记为待优化时，code指针指向LazyRecompile，LazyRecompile会唤醒编译器对其进行优化。这样在下次调用该函数时就会对其进行优化。</p>
+<p>deoptimize的原因在src/deoptimize-reason.h里边</p>
+<p>在同一个编译阶段，针对不同的Node，操作是不同的；在不同的编译阶段，针对同一个Node，操作也是不同的，visitor模式就是用来处理这种耦合的。</p>
+<p>在外部函数包含内部函数时，外部函数定义的变量通过闭包的形式可以在内部函数中访问到，在对外部函数的调用结束后内部函数定义的变量停止存在，外部函数定义的变量以闭包形式继续存在。重新实例化外部函数会重新生成函数内定义的所有变量</p>
+<p><a target="_blank" rel="noopener" href="https://medium.com/@prashantramnyc/javascript-closures-simplified-d0d23fa06ba4">https://medium.com/@prashantramnyc/javascript-closures-simplified-d0d23fa06ba4</a></p>
+<p>v8内部实现的时候对array对象有分类PACKED_SMI_ELEMENTS、PACKED_DOUBLE_ELEMENTS、PACKED_ELEMENTS、HOLEY_ELEMENTS（从特殊到一般），对array分类的标记只能从特定类型到一般类型，不可逆。如已被标记PACKED_ELEMENTS的array不可能被重新标记为PACKED_DOUBLE_ELEMENTS类型。</p>
+<p>packed array比holey array优化时更容易，所以v8在内部对packed和holey array做了区分。array可以从packed标记过渡到holey，holey是packed的一般化</p>
+<p><a target="_blank" rel="noopener" href="https://v8.dev/blog/elements-kinds">https://v8.dev/blog/elements-kinds</a></p>
+<p>生成相同隐藏类</p>
+<p>从相同的起点，以相同的顺序，添加结构相同的属性</p>
+<p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/98434092">https://zhuanlan.zhihu.com/p/98434092</a></p>
+<p>v8 TurboFan IR处理的代码实现在</p>
+<p>pipeline.cc </p>
+<p>class PipelineImpl</p>
+<p>TyperPhase在typer.cc Typer::Visitor类里根据节点类型处理节点</p>
+<p>reduce的调用过程是</p>
+<p>PipelineImpl::CreateGraph xx</p>
+<p>PipelineImpl::Run&lt;xxPhase&gt;</p>
+<p>xxPhase GraphReducer.AddReducer(xx)    GraphReducer.ReduceGraph() =&gt; 最终调用到</p>
+<p>GraphReducer::Reduce 并在这里根据前边AddReducer(xx)里边的类型调用到xx::Reduce</p>
+</div></div><div class="post-main post-comment"></div></article><link rel="stylesheet" type="text/css" href="/css/font.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcss.com/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+  $(".fancybox").fancybox();
+});
+</script></body></html>

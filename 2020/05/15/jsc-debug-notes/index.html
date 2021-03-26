@@ -1,0 +1,28 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="1.输出各阶段的asm"><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/noise.css"><title>jsc debug notes | /home/5n1p3r0010</title><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><meta name="generator" content="Hexo 5.4.0"></head><body><article class="wrapper"><div class="post-main"><div class="nav"><nav class="container"><a class="sidebar-nav-item active" href="/">Home</a><a class="sidebar-nav-item" href="/archives">Archives</a></nav><div class="container post-meta"><div class="post-time">2020-05-15</div></div></div><div class="container post-header"><h1>jsc debug notes</h1></div><div class="container post-content"><p>1.输出各阶段的asm</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;Tools&#x2F;Scripts&#x2F;run-jsc &lt;arg&gt; &#x2F;path&#x2F;to&#x2F;jsfile &amp;&gt; ~&#x2F;out</span><br></pre></td></tr></table></figure>
+
+<p>其中arg可以为</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">JSC_dumpDisassembly &#x3D; true    转储所有JIT编译函数的反汇编。</span><br><span class="line">JSC_dumpDFGDisassembly &#x3D; true    转储DFG和FTL编译函数的反汇编。</span><br><span class="line">JSC_dumpFTLDisassembly &#x3D; true    转储FTL编译函数的反汇编。</span><br><span class="line">JSC_dumpSourceAtDFGTime &#x3D; true    转储DFG&#x2F;FTL编译函数的来源。</span><br><span class="line">JSC_dumpBytecodeAtDFGTime &#x3D; true    转储DFG&#x2F;FTL编译函数的字节码。</span><br><span class="line">JSC_dumpGraphAfterParsing &#x3D; true    在DFG&#x2F;FTL编译时解析函数字节码后转储DFG图。</span><br><span class="line">JSC_dumpGraphAtEachPhase &#x3D; true    在DFG&#x2F;FTL编译的每个阶段之后转储DFG图。</span><br></pre></td></tr></table></figure>
+
+<p>一例</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;Tools&#x2F;Scripts&#x2F;run-jsc --JSC_dumpDisassembly&#x3D;true --JSC_dumpDFGDisassembly&#x3D;true --JSC_dumpFTLDisassembly&#x3D;true --JSC_dumpSourceAtDFGTime&#x3D;true --JSC_dumpBytecodeAtDFGTime&#x3D;true --JSC_dumpGraphAfterParsing&#x3D;true --JSC_dumpGraphAtEachPhase&#x3D;true &#x2F;home&#x2F;r00t&#x2F;workspace&#x2F;poc3.js &amp;&gt; ~&#x2F;log</span><br></pre></td></tr></table></figure>
+
+<p><a target="_blank" rel="noopener" href="https://webkit.org/blog/6411/">https://webkit.org/blog/6411/</a></p>
+<p>2.lldb输出崩溃信息</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bugreport unwind -outfile &lt;&#x2F;path&#x2F;to&#x2F;logfile&gt;</span><br></pre></td></tr></table></figure>
+
+<p> 也可以在lldb shell里使用log enable，语法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">log enable &lt;cmd-options&gt; &lt;log-channel&gt; &lt;log-category&gt; [&lt;log-category&gt; [...]]</span><br></pre></td></tr></table></figure>
+
+<p>一例</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">log enable lldb all -f ~&#x2F;test</span><br></pre></td></tr></table></figure>
+
+<p> 3.js代码断点（类似v8的%SystemBreak();）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">b arrayProtoFuncSlice</span><br></pre></td></tr></table></figure>
+
+<p>在js代码中调用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Array.prototype.slice([]);</span><br></pre></td></tr></table></figure>
+</div></div><div class="post-main post-comment"></div></article><link rel="stylesheet" type="text/css" href="/css/font.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcss.com/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+  $(".fancybox").fancybox();
+});
+</script></body></html>

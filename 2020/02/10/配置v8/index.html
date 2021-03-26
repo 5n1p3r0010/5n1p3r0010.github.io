@@ -1,0 +1,81 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="配置小飞机，&lt;a href=&quot;https://github.com/qingshuisiyuan/electron-ssr-backup/releases/download/v0.2.6/electron-ssr-0.2.6.deb&quot;&gt;下载传送门 &lt;/a&gt;"><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/noise.css"><title>配置v8 | /home/5n1p3r0010</title><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><meta name="generator" content="Hexo 5.4.0"></head><body><article class="wrapper"><div class="post-main"><div class="nav"><nav class="container"><a class="sidebar-nav-item active" href="/">Home</a><a class="sidebar-nav-item" href="/archives">Archives</a></nav><div class="container post-meta"><div class="post-time">2020-02-10</div></div></div><div class="container post-header"><h1>配置v8</h1></div><div class="container post-content"><p>配置小飞机，<a target="_blank" rel="noopener" href="https://github.com/qingshuisiyuan/electron-ssr-backup/releases/download/v0.2.6/electron-ssr-0.2.6.deb">下载传送门 </a></p>
+<p>　　安装</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">dpkg -i xxx</span><br><span class="line">apt-get -f install</span><br></pre></td></tr></table></figure>
+
+<p>　　设置成全局代理</p>
+<p>设置终端代理，推荐使用polipo（使用别的全局代理方式可能导致拉取旧的代码的时候代理出问题，喜欢探索的同学可以试下别的方式，信奉人生苦短少瞎折腾的同学跟着这个步骤一步一步来就行；这样配置成功之后终端走的是ssr的全局代理，如果浏览器如chrome想走代理使用终端起chrome进程即可）</p>
+<p>安装</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install polipo</span><br></pre></td></tr></table></figure>
+
+<p>修改配置文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo gedit &#x2F;etc&#x2F;polipo&#x2F;config</span><br></pre></td></tr></table></figure>
+
+<p>改为</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"># This file only needs to list configuration variables that deviate</span><br><span class="line"># from the default values.  See &#x2F;usr&#x2F;share&#x2F;doc&#x2F;polipo&#x2F;examples&#x2F;config.sample</span><br><span class="line"># and &quot;polipo -v&quot; for variables you can tweak and further information.</span><br><span class="line"></span><br><span class="line">logSyslog &#x3D; false</span><br><span class="line">logFile &#x3D; &quot;&#x2F;var&#x2F;log&#x2F;polipo&#x2F;polipo.log&quot;</span><br><span class="line"></span><br><span class="line">socksParentProxy &#x3D; &quot;127.0.0.1:1080&quot;</span><br><span class="line">socksProxyType &#x3D; socks5</span><br><span class="line"></span><br><span class="line">chunkHighMark &#x3D; 50331648</span><br><span class="line">objectHighMark &#x3D; 16384</span><br><span class="line"></span><br><span class="line">serverMaxSlots &#x3D; 64</span><br><span class="line">serverSlots &#x3D; 16</span><br><span class="line">serverSlots1 &#x3D; 32</span><br><span class="line"></span><br><span class="line">proxyAddress &#x3D; &quot;0.0.0.0&quot;</span><br><span class="line">proxyPort &#x3D; 8123</span><br></pre></td></tr></table></figure>
+
+<p>重启polipo生效</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;etc&#x2F;init.d&#x2F;polipo restart</span><br></pre></td></tr></table></figure>
+
+<p>修改~/.bashrc添加</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">export http_proxy&#x3D;&quot;localhost:8123&quot;</span><br><span class="line">export https_proxy&#x3D;&quot;localhost:8123&quot;</span><br><span class="line">export ftp_proxy&#x3D;&quot;localhost:8123&quot;</span><br></pre></td></tr></table></figure>
+
+<p>创建~/.boto文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[Boto]</span><br><span class="line">proxy&#x3D;127.0.0.1</span><br><span class="line">proxy_port&#x3D;8123</span><br></pre></td></tr></table></figure>
+
+<p>导出环境变量</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">set NO_AUTH_BOTO_CONFIG&#x3D;path_to_.boto&#x2F;.boto</span><br></pre></td></tr></table></figure>
+
+<p>重启bash即可（重启bash后可以用curl google.com检查下是否成功）</p>
+<p>配置V8</p>
+<p>　　安装ninja并写入bashrc</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">git clone https:&#x2F;&#x2F;github.com&#x2F;ninja-build&#x2F;ninja.git</span><br><span class="line">cd ninja &amp;&amp; .&#x2F;configure.py --bootstrap &amp;&amp; cd ..</span><br><span class="line">echo &#39;export PATH&#x3D;$PATH:&quot;&#x2F;path&#x2F;to&#x2F;ninja&quot;&#39; &gt;&gt; ~&#x2F;.bashrc</span><br><span class="line">bash</span><br></pre></td></tr></table></figure>
+
+<p>　　安装depot_tools</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone https:&#x2F;&#x2F;chromium.googlesource.com&#x2F;chromium&#x2F;tools&#x2F;depot_tools.git</span><br></pre></td></tr></table></figure>
+
+<p>写入.bashrc</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">echo &#39;export PATH&#x3D;$PATH:&quot;&#x2F;path&#x2F;to&#x2F;depot_tools&quot;&#39; &gt;&gt; ~&#x2F;.bashrc</span><br><span class="line">bash</span><br></pre></td></tr></table></figure>
+
+<p>完成后执行</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mkdir v8</span><br><span class="line">cd v8</span><br><span class="line">fetch v8</span><br></pre></td></tr></table></figure>
+
+<p> 下载完成后执行</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gclient sync</span><br></pre></td></tr></table></figure>
+
+<p>编译（release版）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tools&#x2F;dev&#x2F;v8gen.py x64.debug</span><br><span class="line">ninja -C out.gn&#x2F;x64.debug</span><br></pre></td></tr></table></figure>
+
+<p> 编译（debug版）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tools&#x2F;dev&#x2F;v8gen.py x64.release</span><br><span class="line">ninja -C out.gn&#x2F;x64.release</span><br></pre></td></tr></table></figure>
+
+<p>安装turbolizer</p>
+<p>　　turbolizer安装时需要配置npm的代理，一个简单易行的方法是修改添加~/.npmrc文件，并写入以下内容</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">proxy&#x3D;http:&#x2F;&#x2F;127.0.0.1:8123&#x2F;</span><br><span class="line">https-proxy&#x3D;http:&#x2F;&#x2F;127.0.0.1:8123</span><br><span class="line">registry&#x3D;http:&#x2F;&#x2F;registry.npmjs.org&#x2F;</span><br></pre></td></tr></table></figure>
+
+<p> 配置好npm代理后切换到/v8/tools/turbolizer目录下安装</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">npm i</span><br><span class="line">npm run-script build</span><br></pre></td></tr></table></figure>
+
+<p>使用，在turbolizer目录下开启本地端口</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python -m SimpleHTTPServer 8000</span><br></pre></td></tr></table></figure>
+
+<p>打开google-chrome浏览器访问本地8000端口即可</p>
+<p>可能的问题：</p>
+<p>0.如果在拉取旧的commit(git reset –hard xxx)的时候使用gclient sync报错</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Error: 4&gt; </span><br><span class="line">4&gt; ____ v8&#x2F;buildtools at xxx</span><br><span class="line">4&gt;     You have unstaged changes.</span><br><span class="line">4&gt;     Please commit, stash, or reset.</span><br></pre></td></tr></table></figure>
+
+<p>解决方法，使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gclient sync -f</span><br></pre></td></tr></table></figure>
+
+<p>1.如果碰到编译时tools/dev/v8gen.py x64.debug报错</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">################################################################################</span><br><span class="line">&#x2F;usr&#x2F;bin&#x2F;python -u tools&#x2F;mb&#x2F;mb.py gen -f infra&#x2F;mb&#x2F;mb_config.pyl -m developer_default -b x64.debug out.gn&#x2F;x64.debug</span><br><span class="line">  </span><br><span class="line">  Writing &quot;&quot;&quot;\</span><br><span class="line">  is_debug &#x3D; true</span><br><span class="line">  target_cpu &#x3D; &quot;x64&quot;</span><br><span class="line">  v8_enable_backtrace &#x3D; true</span><br><span class="line">  v8_enable_slow_dchecks &#x3D; true</span><br><span class="line">  v8_optimized_debug &#x3D; false</span><br><span class="line">  &quot;&quot;&quot; to &#x2F;home&#x2F;r00t&#x2F;v8&#x2F;out.gn&#x2F;x64.debug&#x2F;args.gn.</span><br><span class="line">  </span><br><span class="line">  &#x2F;home&#x2F;r00t&#x2F;v8&#x2F;buildtools&#x2F;linux64&#x2F;gn gen out.gn&#x2F;x64.debug --check</span><br><span class="line">    -&gt; returned 1</span><br><span class="line">  ERROR at &#x2F;&#x2F;build&#x2F;config&#x2F;linux&#x2F;pkg_config.gni:103:17: Script returned non-zero exit code.</span><br><span class="line">      pkgresult &#x3D; exec_script(pkg_config_script, args, &quot;value&quot;)</span><br><span class="line">                  ^----------</span><br><span class="line">  Current dir: &#x2F;home&#x2F;r00t&#x2F;v8&#x2F;out.gn&#x2F;x64.debug&#x2F;</span><br><span class="line">  Command: python &#x2F;home&#x2F;r00t&#x2F;v8&#x2F;build&#x2F;config&#x2F;linux&#x2F;pkg-config.py -s &#x2F;home&#x2F;r00t&#x2F;v8&#x2F;build&#x2F;linux&#x2F;debian_sid_amd64-sysroot -a x64 glib-2.0 gmodule-2.0 gobject-2.0 gthread-2.0</span><br><span class="line">  Returned 1.</span><br></pre></td></tr></table></figure>
+
+<p>执行如下命令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get update &amp;&amp; sudo apt-get install pkg-config</span><br></pre></td></tr></table></figure>
+
+<p>如果编译时出现权限问题chmod 777即可</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd ..</span><br><span class="line">sudo chmod 777 -R v8</span><br></pre></td></tr></table></figure>
+
+</div></div><div class="post-main post-comment"></div></article><link rel="stylesheet" type="text/css" href="/css/font.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcss.com/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+  $(".fancybox").fancybox();
+});
+</script></body></html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html><html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content="0.64位程序参数一次保存在RDI，RSI，RDX，RCX，R8和 R9，具体见图"><link rel="stylesheet" type="text/css" href="/css/normalize.css"><link rel="stylesheet" type="text/css" href="/css/highlight.css"><link rel="stylesheet" type="text/css" href="/css/noise.css"><title>my pwn notes | /home/5n1p3r0010</title><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><meta name="generator" content="Hexo 5.4.0"></head><body><article class="wrapper"><div class="post-main"><div class="nav"><nav class="container"><a class="sidebar-nav-item active" href="/">Home</a><a class="sidebar-nav-item" href="/archives">Archives</a></nav><div class="container post-meta"><div class="post-tags"><a class="post-tag-none-link" href="/tags/notes/" rel="tag">notes</a></div><div class="post-time">2018-06-12</div></div></div><div class="container post-header"><h1>my pwn notes</h1></div><div class="container post-content"><p>0.64位程序参数一次保存在RDI，RSI，RDX，RCX，R8和 R9，具体见图</p>
+<p><img src="1421096-20180612222316587-1811885460.png" alt="img"></p>
+<p><a target="_blank" rel="noopener" href="http://www.cnblogs.com/shines77/p/3788514.html">windows64位调用约定</a></p>
+<p>1.&lt;_libc_csu_init&gt;有一些万能gadget，汇编如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">#!bash</span><br><span class="line">00000000004005a0 &lt;__libc_csu_init&gt;:</span><br><span class="line">  4005a0:   48 89 6c 24 d8          mov    %rbp,-0x28(%rsp)</span><br><span class="line">  4005a5:   4c 89 64 24 e0          mov    %r12,-0x20(%rsp)</span><br><span class="line">  4005aa:   48 8d 2d 73 08 20 00    lea    0x200873(%rip),%rbp        # 600e24 &lt;__init_array_end&gt;</span><br><span class="line">  4005b1:   4c 8d 25 6c 08 20 00    lea    0x20086c(%rip),%r12        # 600e24 &lt;__init_array_end&gt;</span><br><span class="line">  4005b8:   4c 89 6c 24 e8          mov    %r13,-0x18(%rsp)</span><br><span class="line">  4005bd:   4c 89 74 24 f0          mov    %r14,-0x10(%rsp)</span><br><span class="line">  4005c2:   4c 89 7c 24 f8          mov    %r15,-0x8(%rsp)</span><br><span class="line">  4005c7:   48 89 5c 24 d0          mov    %rbx,-0x30(%rsp)</span><br><span class="line">  4005cc:   48 83 ec 38             sub    $0x38,%rsp</span><br><span class="line">  4005d0:   4c 29 e5                sub    %r12,%rbp</span><br><span class="line">  4005d3:   41 89 fd                mov    %edi,%r13d</span><br><span class="line">  4005d6:   49 89 f6                mov    %rsi,%r14</span><br><span class="line">  4005d9:   48 c1 fd 03             sar    $0x3,%rbp</span><br><span class="line">  4005dd:   49 89 d7                mov    %rdx,%r15</span><br><span class="line">  4005e0:   e8 1b fe ff ff          callq  400400 &lt;_init&gt;</span><br><span class="line">  4005e5:   48 85 ed                test   %rbp,%rbp</span><br><span class="line">  4005e8:   74 1c                   je     400606 &lt;__libc_csu_init+0x66&gt;</span><br><span class="line">  4005ea:   31 db                   xor    %ebx,%ebx</span><br><span class="line">  4005ec:   0f 1f 40 00             nopl   0x0(%rax)</span><br><span class="line">  4005f0:   4c 89 fa                mov    %r15,%rdx</span><br><span class="line">  4005f3:   4c 89 f6                mov    %r14,%rsi</span><br><span class="line">  4005f6:   44 89 ef                mov    %r13d,%edi</span><br><span class="line">  4005f9:   41 ff 14 dc             callq  *(%r12,%rbx,8)</span><br><span class="line">  4005fd:   48 83 c3 01             add    $0x1,%rbx</span><br><span class="line">  400601:   48 39 eb                cmp    %rbp,%rbx</span><br><span class="line">  400604:   75 ea                   jne    4005f0 &lt;__libc_csu_init+0x50&gt;</span><br><span class="line">  400606:   48 8b 5c 24 08          mov    0x8(%rsp),%rbx</span><br><span class="line">  40060b:   48 8b 6c 24 10          mov    0x10(%rsp),%rbp</span><br><span class="line">  400610:   4c 8b 64 24 18          mov    0x18(%rsp),%r12</span><br><span class="line">  400615:   4c 8b 6c 24 20          mov    0x20(%rsp),%r13</span><br><span class="line">  40061a:   4c 8b 74 24 28          mov    0x28(%rsp),%r14</span><br><span class="line">  40061f:   4c 8b 7c 24 30          mov    0x30(%rsp),%r15</span><br><span class="line">  400624:   48 83 c4 38             add    $0x38,%rsp</span><br><span class="line">  400628:   c3                      retq   </span><br></pre></td></tr></table></figure>
+
+
+
+<p> 2.gcc的编译选项：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">-z execstack关闭NX</span><br><span class="line">-z noexecstack开启NX</span><br><span class="line">-no-pie关闭PIE</span><br><span class="line">-pie开启PIE   </span><br><span class="line">-g 参数可以用GDB加载时l,b &lt;line&gt;在源代码第&lt;line&gt;行下断点</span><br><span class="line">关于canary的几个编译选项：</span><br><span class="line">-fstack-protector 启用保护，不过只为局部变量中含有数组的函数插入保护 </span><br><span class="line">-fstack-protector-all 启用保护，为所有函数插入保护 </span><br><span class="line">-fstack-protector-strong 类似windows下GS的一个编译选项，以下加入canary1）在本地变量地址作为右值表达式或作为函数参数2）本地变量是数组或含数组的union</span><br><span class="line">-fstack-protector-explicit 只对有明确stack_protect attribute的函数开启保护 </span><br><span class="line">-fno-stack-protector 禁用保护</span><br></pre></td></tr></table></figure>
+
+
+
+<p>3.<br>readelf -S <filename>查看文件段偏移<br>readelf -r <filename>查看文件重定位表,.rel.dyn和.rel.plt</p>
+<p>4.gdb-peda安装</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git clone https:&#x2F;&#x2F;github.com&#x2F;longld&#x2F;peda.git ~&#x2F;peda</span><br><span class="line">echo &quot;source ~&#x2F;peda&#x2F;peda.py&quot; &gt;&gt; ~&#x2F;.gdbinit</span><br></pre></td></tr></table></figure>
+
+
+
+<p>5.pwndbg安装</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">git clone https:&#x2F;&#x2F;github.com&#x2F;pwndbg&#x2F;pwndbg</span><br><span class="line">cd pwndbg</span><br><span class="line">.&#x2F;setup.sh</span><br></pre></td></tr></table></figure>
+
+
+
+<p>6.windbg命令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">!gflag +hpa　　</span><br><span class="line">　　这条命令用于定位堆溢出点，hpa&#x3D;place heap allocations at the end of pages.</span><br><span class="line">sx</span><br><span class="line">　　set exceptions。sxe ld:&lt;moudle name&gt;,set exceptions enable when load &lt;moudle name&gt;</span><br><span class="line">windbg dump内存</span><br><span class="line">.writemem &lt;DumpFile_Full_Path&gt; &lt;Dump_Start_Addr&gt; L?&lt;Dump_Length&gt;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>7.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">objdump -d -j .plt &lt;filename&gt;  查看&lt;filename&gt;的plt表</span><br><span class="line">objdump -R &lt;filename&gt;  查看&lt;filename&gt;的got表</span><br><span class="line">objdump -M intel -d &lt;filename&gt;　　可以查看&lt;filename&gt;bin文件的intel汇编，默认at&amp;t</span><br></pre></td></tr></table></figure>
+
+
+
+<p>8.scp -P<port> user@computername:<path> <local_path>下载远程文件<path>到本地<local_path></p>
+<p>9.cat /proc/[pid]/maps 查看进程加载信息</p>
+<p>10.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo bash -c &quot;echo 0 &gt; &#x2F;proc&#x2F;sys&#x2F;kernel&#x2F;randomize_va_space&quot;</span><br></pre></td></tr></table></figure>
+<p>关闭系统ASLR<br>  0：没有随机化。即关闭 ASLR。<br>  1：保留的随机化。共享库、栈、mmap() 以及 VDSO 将被随机化。<br>  2：完全的随机化。在 1 的基础上，通过 brk() 分配的内存空间也将被随机化。<br>ASLR并不负责代码段和数据段的随机化</p>
+<p>11.gdb查找system,’/bin/sh’<br>print system 查找system函数地址<br>print __libc_start_main 查找main入口<br>find <addr of __libc_start_main>,+<offset>,”/bin/sh” 查找”/bin/sh”<br><a target="_blank" rel="noopener" href="https://sourceware.org/gdb/onlinedocs/gdb/Searching-Memory.html">官方说明</a></p>
+<p>12.关于RELRO</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">部分RELRO(由ld -z relro启用):</span><br><span class="line">　　将.got段映射为只读(但.got.plt还是可以写)</span><br><span class="line">　　重新排列各个段来减少全局变量溢出导致覆盖代码段的可能性.</span><br><span class="line">完全RELRO(由ld -z relro -z now启用)</span><br><span class="line">　　执行部分RELRO的所有操作.</span><br><span class="line">　　让链接器在链接期间(执行程序之前)解析所有的符号, 然后去除.got的写权限.</span><br><span class="line">　　将.got.plt合并到.got段中, 所以.got.plt将不复存在.</span><br></pre></td></tr></table></figure>
+
+
+
+<p>13.pwntools加载指定libc启动</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">p&#x3D;process(&#39;&lt;process_name&gt;&#39;,env&#x3D;&#123;&quot;LD_PRELOAD&quot;:&quot;&lt;libc_absolute_path&gt;&quot;&#125;)</span><br><span class="line">pwntools带参数args启动&lt;proc&gt;</span><br><span class="line">p&#x3D;process(argv&#x3D;[&#39;.&#x2F;proc&#39;,args])</span><br></pre></td></tr></table></figure>
+
+
+
+<p>14.<br>angr安装:（一定要在mkvirtualenv的虚拟环境下装，不然本地pwntools会报各种各样的错。人生苦短少瞎折腾;b）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">apt-get install python-dev libffi-dev build-essential virtualenvwrapper</span><br><span class="line"></span><br><span class="line">find &#x2F; -name virtualenvwrapper.sh    &#x2F;&#x2F;找到的virtualenvwrapper.sh路径记为&lt;path&gt;</span><br><span class="line">export WORKON_HOME&#x3D;~&#x2F;Envs　　&#x2F;&#x2F;这里最好切到根目录下</span><br><span class="line">source &lt;path&gt;</span><br><span class="line"></span><br><span class="line">创建angr虚拟环境安装angr（进入虚拟环境后使用pwntools还需在此环境下重新安装,pip install pwntools）</span><br><span class="line">mkvirtualenv angr &amp;&amp; pip install angr</span><br></pre></td></tr></table></figure>
+
+
+
+<p>15.手动下载符号表<br>cmd:<windbg_path>/symchk.exe <target_dll_path> /s SRV*<download_path>*<a target="_blank" rel="noopener" href="http://msdl.microsoft.com/download/symbols">http://msdl.microsoft.com/download/symbols</a></p>
+<p>16.windows下利用管理员权限CMD替换系统DLL</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">takeown &#x2F;f &lt;dll_path&gt;</span><br><span class="line">icacls &lt;dll_path&gt; &#x2F;grant administrators:F</span><br></pre></td></tr></table></figure>
+
+
+
+<p>17.windbg在进程启动时附加</p>
+<p>注册表[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options&lt;app&gt;.exe]添加字符串值debugger，value为windbg.exe系统环境变量path添加windbg安装路径;或者value值设置为windbg.exe的安装路径</p>
+<p>18.nm -C <filename>　　查看<filename>符号表</p>
+<p>19.apt-get source libc6-dev　　下载源码</p>
+<p>grep “<search_target>“ -r ./<libc_source_path>/　　查找<search_target>在<libc_source_path>的位置</p>
+<p>20._IO_file</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line">struct _IO_FILE &#123;</span><br><span class="line">  int _flags;           &#x2F;* High-order word is _IO_MAGIC; rest is flags. *&#x2F;</span><br><span class="line">#define _IO_file_flags _flags</span><br><span class="line">  &#x2F;* The following pointers correspond to the C++ streambuf protocol. *&#x2F;</span><br><span class="line">  &#x2F;* Note:  Tk uses the _IO_read_ptr and _IO_read_end fields directly. *&#x2F;</span><br><span class="line">  char* _IO_read_ptr;   &#x2F;* Current read pointer *&#x2F;</span><br><span class="line">  char* _IO_read_end;   &#x2F;* End of get area. *&#x2F;</span><br><span class="line">  char* _IO_read_base;  &#x2F;* Start of putback+get area. *&#x2F;</span><br><span class="line">  char* _IO_write_base; &#x2F;* Start of put area. *&#x2F;</span><br><span class="line">  char* _IO_write_ptr;  &#x2F;* Current put pointer. *&#x2F;</span><br><span class="line">  char* _IO_write_end;  &#x2F;* End of put area. *&#x2F;</span><br><span class="line">  char* _IO_buf_base;   &#x2F;* Start of reserve area. *&#x2F;</span><br><span class="line">  char* _IO_buf_end;    &#x2F;* End of reserve area. *&#x2F;</span><br><span class="line">  &#x2F;* The following fields are used to support backing up and undo. *&#x2F;</span><br><span class="line">  char *_IO_save_base; &#x2F;* Pointer to start of non-current get area. *&#x2F;</span><br><span class="line">  char *_IO_backup_base;  &#x2F;* Pointer to first valid character of backup area *&#x2F;</span><br><span class="line">  char *_IO_save_end; &#x2F;* Pointer to end of non-current get area. *&#x2F;</span><br><span class="line">  struct _IO_marker *_markers;</span><br><span class="line">  struct _IO_FILE *_chain;</span><br><span class="line">  int _fileno;</span><br><span class="line">#if 0</span><br><span class="line">  int _blksize;</span><br><span class="line">#else</span><br><span class="line">  int _flags2;</span><br><span class="line">#endif</span><br><span class="line">  _IO_off_t _old_offset; &#x2F;* This used to be _offset but it&#39;s too small.  *&#x2F;</span><br><span class="line">#define __HAVE_COLUMN &#x2F;* temporary *&#x2F;</span><br><span class="line">  &#x2F;* 1+column number of pbase(); 0 is unknown. *&#x2F;</span><br><span class="line">  unsigned short _cur_column;</span><br><span class="line">  signed char _vtable_offset;</span><br><span class="line">  char _shortbuf[1];</span><br><span class="line">  &#x2F;*  char* _save_gptr;  char* _save_egptr; *&#x2F;</span><br><span class="line">  _IO_lock_t *_lock;</span><br><span class="line">#ifdef _IO_USE_OLD_IO_FILE</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">struct _IO_FILE_plus</span><br><span class="line">&#123;</span><br><span class="line">  FILE file;    &#x2F;&#x2F;FILE&#x3D;_IO_FILE</span><br><span class="line">  const struct _IO_jump_t *vtable;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">struct _IO_FILE;</span><br><span class="line">&#x2F;* The opaque type of streams.  This is the definition used elsewhere.  *&#x2F;</span><br><span class="line">typedef struct _IO_FILE FILE;</span><br><span class="line"></span><br><span class="line">struct _IO_jump_t</span><br><span class="line">&#123;</span><br><span class="line">    JUMP_FIELD(size_t, __dummy);</span><br><span class="line">    JUMP_FIELD(size_t, __dummy2);</span><br><span class="line">    JUMP_FIELD(_IO_finish_t, __finish);</span><br><span class="line">    JUMP_FIELD(_IO_overflow_t, __overflow);</span><br><span class="line">    JUMP_FIELD(_IO_underflow_t, __underflow);</span><br><span class="line">    JUMP_FIELD(_IO_underflow_t, __uflow);</span><br><span class="line">    JUMP_FIELD(_IO_pbackfail_t, __pbackfail);</span><br><span class="line">    &#x2F;* showmany *&#x2F;</span><br><span class="line">    JUMP_FIELD(_IO_xsputn_t, __xsputn);</span><br><span class="line">    JUMP_FIELD(_IO_xsgetn_t, __xsgetn);</span><br><span class="line">    JUMP_FIELD(_IO_seekoff_t, __seekoff);</span><br><span class="line">    JUMP_FIELD(_IO_seekpos_t, __seekpos);</span><br><span class="line">    JUMP_FIELD(_IO_setbuf_t, __setbuf);</span><br><span class="line">    JUMP_FIELD(_IO_sync_t, __sync);</span><br><span class="line">    JUMP_FIELD(_IO_doallocate_t, __doallocate);</span><br><span class="line">    JUMP_FIELD(_IO_read_t, __read);</span><br><span class="line">    JUMP_FIELD(_IO_write_t, __write);</span><br><span class="line">    JUMP_FIELD(_IO_seek_t, __seek);</span><br><span class="line">    JUMP_FIELD(_IO_close_t, __close);</span><br><span class="line">    JUMP_FIELD(_IO_stat_t, __stat);</span><br><span class="line">    JUMP_FIELD(_IO_showmanyc_t, __showmanyc);</span><br><span class="line">    JUMP_FIELD(_IO_imbue_t, __imbue);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+
+<p> 关于_IO_file的利用：</p>
+<p>　　p _IO_2_1_stdout_可以找到vtable的地址，然后覆盖vtable的指针即可改变程序的流程</p>
+<p>　　p *(struct _IO_jump_t *)<vtable_addr>可以查看vtable的内容</p>
+<p>21.开启PIE的程序下相对偏移断点</p>
+<p>pwndbg的一个姿势（程序运行状态有效，在需要输入的位置CTRL+C即可）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">b *$rebase(offset)　　offset替换为断点的相对偏移</span><br></pre></td></tr></table></figure>
+
+
+
+<p>22.ROPgadget –binary <filename> –only “pop|ret” | grep <reg></p>
+<p>过滤<filename>中<reg>的rop gadget</p>
+<p>23.关于FORTIFY机制</p>
+<p><a target="_blank" rel="noopener" href="https://blog.kyrios.cn/2017/10/14/fmteulogy/">传送门</a><br>按我个人的理解这是缓冲区溢出的缓解措施，这个机制会进行如下操作：<br>1）在gcc编译阶段使用编译选项-D_FORTIFY_SOURCE=2（1 或者 2），gcc会检测到使用strcpy及类似危险函数时未检查边界的情况，给出warning<br>2）对格式化字符串利用的限制，包括参数解析的地址不能位于可读可写区域、使用类似%2$x必须使用%1$x<br>3）对于需要解析地址的函数替换成对应的__*_chk函数</p>
+<p>24.apt-get</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"># apt-get update——在修改&#x2F;etc&#x2F;apt&#x2F;sources.list或者&#x2F;etc&#x2F;apt&#x2F;preferences之後运行该命令。此外您需要定期运行这一命令以确保您的软件包列表是最新的。</span><br><span class="line"># apt-get install packagename——安装一个新软件包（参见下文的aptitude）</span><br><span class="line"># apt-get remove packagename——卸载一个已安装的软件包（保留配置文件）</span><br><span class="line"># apt-get --purge remove packagename——卸载一个已安装的软件包（删除配置文件）</span><br><span class="line"># dpkg --force-all --purge packagename 有些软件很难卸载，而且还阻止了别的软件的应用，就可以用这个，不过有点冒险。</span><br><span class="line"># apt-get autoclean apt会把已装或已卸的软件都备份在硬盘上，所以如果需要空间的话，可以让这个命令来删除你已经删掉的软件</span><br><span class="line"># apt-get clean 这个命令会把安装的软件的备份也删除，不过这样不会影响软件的使用的。</span><br><span class="line"># apt-get upgrade——更新所有已安装的软件包</span><br><span class="line"># apt-get dist-upgrade——将系统升级到新版本</span><br><span class="line"># apt-cache search string——在软件包列表中搜索字符串</span><br><span class="line"># dpkg -l package-name-pattern——列出所有与模式相匹配的软件包。如果您不知道软件包的全名，您可以使用“*package-name-pattern*”。</span><br><span class="line"># aptitude——详细查看已安装或可用的软件包。与apt-get类似，aptitude可以通过命令行方式调用，但仅限于某些命令——最常见的有安装和卸载命令。由于aptitude比apt-get了解更多信息，可以说它更适合用来进行安装和卸载。</span><br><span class="line"># apt-cache showpkg pkgs——显示软件包信息。</span><br><span class="line"># apt-cache dumpavail——打印可用软件包列表。</span><br><span class="line"># apt-cache show pkgs——显示软件包记录，类似于dpkg –print-avail。</span><br><span class="line"># apt-cache pkgnames——打印软件包列表中所有软件包的名称。</span><br><span class="line"># dpkg -S file——这个文件属于哪个已安装软件包。</span><br><span class="line"># dpkg -L package——列出软件包中的所有文件。</span><br><span class="line"># apt-file search filename——查找包含特定文件的软件包（不一定是已安装的），这些文件的文件名中含有指定的字符串。apt-file是一个独立的软件包。您必须先使用apt-get install来安装它，然後运行apt-file update。如果apt-file search filename输出的内容太多，您可以尝试使用apt-file search filename | grep -w filename（只显示指定字符串作为完整的单词出现在其中的那些文件名）或者类似方法，例如：apt-file search filename | grep &#x2F;bin&#x2F;（只显示位于诸如&#x2F;bin或&#x2F;usr&#x2F;bin这些文件夹中的文件，如果您要查找的是某个特定的执行文件的话，这样做是有帮助的）。</span><br><span class="line">apt-get update 系统软件包更新</span><br></pre></td></tr></table></figure>
+
+<p>25.linux下使用代（敏感词敏感词）理</p>
+<p>配置小飞机，<a target="_blank" rel="noopener" href="https://github.com/qingshuisiyuan/electron-ssr-backup/releases/download/v0.2.6/electron-ssr-0.2.6.deb">下载传送门 </a></p>
+<p>　　安装</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">dpkg -i xxx</span><br><span class="line">apt-get -f install</span><br></pre></td></tr></table></figure>
+
+<p>　　设置成全局代（敏感词敏感词）理</p>
+<p>设置终端代（敏感词敏感词）理，我使用的是privoxy</p>
+<p>安装</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-get install privoxy</span><br></pre></td></tr></table></figure>
+
+<p>修改/etc/privoxy/config配置</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1.搜索字符串去掉listen-address 127.0.0.1:8118 这一句的注释（#）</span><br><span class="line">2.搜索forward-socks5t，改成forward-socks5t &#x2F; 127.0.0.1:1080 .</span><br><span class="line">并去掉注释</span><br></pre></td></tr></table></figure>
+
+<p>修改.bashrc，(路径~/.bashrc)，结尾添加如下配置</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">export http_proxy&#x3D;http:&#x2F;&#x2F;127.0.0.1:8118</span><br><span class="line">export https_proxy&#x3D;http:&#x2F;&#x2F;127.0.0.1:8118</span><br><span class="line">export ftp_proxy&#x3D;http:&#x2F;&#x2F;127.0.0.1:8118</span><br></pre></td></tr></table></figure>
+
+<p>配置修改完毕运行bash即可</p>
+<p> 26.本地socat部署pwn环境</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">socat tcp4-listen:&lt;port&gt;,reuseaddr,fork exec:&quot;env LD_PRELOAD&#x3D;&lt;libc_path&gt; &lt;execute_file_path&gt;&quot; &amp;</span><br></pre></td></tr></table></figure>
+
+<p> socat安装：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">wget http:&#x2F;&#x2F;www.dest-unreach.org&#x2F;socat&#x2F;download&#x2F;socat-1.7.3.2.tar.gz</span><br><span class="line">tar zxf socat-1.7.3.2.tar.gz</span><br><span class="line">cd socat-1.7.3.2</span><br><span class="line">.&#x2F;configure </span><br><span class="line">make   </span><br><span class="line">make install</span><br></pre></td></tr></table></figure>
+
+
+
+<p>27.在Linux中，值为0、1、2的fd分别代表标准输入、标准输出和标准错误输出，在程序中打开文件得到的fd从3开始增长</p>
+<p>28.Docker安装</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">#!&#x2F;bin&#x2F;bash </span><br><span class="line">apt-key adv --keyserver hkp:&#x2F;&#x2F;p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D; </span><br><span class="line">echo &#39;deb https:&#x2F;&#x2F;apt.dockerproject.org&#x2F;repo debian-stretch main&#39; &gt; &#x2F;etc&#x2F;apt&#x2F;sources.list.d&#x2F;docker.list; </span><br><span class="line">apt-get install -y apt-transport-https ca-certificates; </span><br><span class="line">apt-get update &amp;&amp; sudo apt-get install -y docker-engine; </span><br><span class="line">systemctl start docker; </span><br><span class="line">systemctl enable docker; </span><br><span class="line">systemctl status docker; </span><br><span class="line">exit; </span><br><span class="line">EOF</span><br></pre></td></tr></table></figure>
+
+<p>运行以上脚本</p>
+<p>安装<code>docker-compose</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install docker-compose</span><br></pre></td></tr></table></figure>
+
+<p>测试安装(需要注册docker账号)<a target="_blank" rel="noopener" href="https://hub.docker.com/">传送门</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">docker login</span><br><span class="line">docker run hello-world</span><br></pre></td></tr></table></figure>
+
+<p>docker加速</p>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/CSDN_duomaomao/article/details/78578720">docker网络问题传送门</a></p>
+<p><a target="_blank" rel="noopener" href="https://cr.console.aliyun.com/cn-hangzhou/instances/mirrors"> 使用阿里云docker镜像加速</a>，获取加速地址</p>
+<p>附</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">阿里：http:&#x2F;&#x2F;mirrors.aliyun.com&#x2F;help&#x2F;docker-ce </span><br><span class="line">清华：https:&#x2F;&#x2F;mirrors.tuna.tsinghua.edu.cn&#x2F;help&#x2F;docker-ce&#x2F; </span><br><span class="line">中科大：http:&#x2F;&#x2F;mirrors.ustc.edu.cn&#x2F;help&#x2F;docker-ce.html </span><br></pre></td></tr></table></figure>
+<p>修改/etc/docker/daemon.json（没有则新建）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">&quot;registry-mirrors&quot;: [</span><br><span class="line">&quot;https:&#x2F;&#x2F;registry.docker-cn.com&quot;,</span><br><span class="line">&quot;https:&#x2F;&#x2F;kfwkfulq.mirror.aliyuncs.com&quot;,</span><br><span class="line">&quot;https:&#x2F;&#x2F;2lqq34jg.mirror.aliyuncs.com&quot;,</span><br><span class="line">&quot;https:&#x2F;&#x2F;pee6w651.mirror.aliyuncs.com&quot;,</span><br><span class="line">&quot;https:&#x2F;&#x2F;registry.docker-cn.com&quot;,</span><br><span class="line">&quot;http:&#x2F;&#x2F;hub-mirror.c.163.com&quot;</span><br><span class="line">],</span><br><span class="line">&quot;dns&quot;: [&quot;8.8.8.8&quot;,&quot;8.8.4.4&quot;]</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">sudo service docker restart</span><br></pre></td></tr></table></figure>
+<p><a target="_blank" rel="noopener" href="https://yq.aliyun.com/articles/29941">加速细节传送门</a></p>
+<p>29.记录一个shellcode编写时突破字节限制的奇技淫巧</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sc&#x3D;asm(&#39;xchg rdi,rsi&#39;)</span><br><span class="line">sc+&#x3D;asm(&#39;mov dl,xx&#39;)</span><br><span class="line">sc+&#x3D;asm(&#39;syscall&#39;)</span><br></pre></td></tr></table></figure>
+
+<p>即通过交换rdi和rsi的值，执行一次sys_read(rdi,xx)，这样汇编之后的shellcode只有7字节（在除rdi外寄存器全部置零的情况下就可以发挥作用了）</p>
+<p>30.</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/sashs/Ropper">ropper github</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ropper --file &lt;filename&gt; |grep syscall</span><br><span class="line">寻找&lt;filename&gt;字节码中的syscall</span><br></pre></td></tr></table></figure>
+
+
+
+<p>31.</p>
+<p>pwn使用题目给定的libc动态调试</p>
+<p>使用libcdatabase查找所给libc版本</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;identify &lt;libc_name&gt;</span><br></pre></td></tr></table></figure>
+
+<p>修改所给elf文件，启动时使用参数LD_PRELOAD=<libc_name>。pwntools中使用p=process(‘./<elf>‘,env={“LD_PRELOAD”:”./<libc>“})</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">patchelf --set-interpreter &lt;libc_ld_path&gt; &lt;elf_name&gt;</span><br><span class="line">LD_PRELOAD&#x3D;&lt;libc_name&gt; &lt;elf_name&gt;或者patchelf --set-rpath &lt;libc_parent_folder&gt;:&#x2F;&lt;libc_name&gt; &lt;elf_name&gt;example:</span><br></pre></td></tr></table></figure>
+
+<p>patchelf –set-rpath /media/sf_pwn_share/ctf-challenges-master/pwn/heap/chunk-extend-shrink/2015_hacklu_bookstore/:/libc.so.6 ./books</p>
+<p>注：<libc_ld_name>是libc对应版本的加载程序，可以从<a target="_blank" rel="noopener" href="https://github.com/matrix1001/welpwn/tree/master/PwnContext/libs">这里</a>下载</p>
+<p>32.linux方便提高工作效率的一些命令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">find &#x2F; -name &lt;file-name&gt;    查找名为&lt;filenname&gt;的文件</span><br><span class="line">cat -n &lt;file-name&gt;    &lt;file-name&gt;以带行数的形式展示grep &quot;&lt;string&gt;&quot; -r &lt;dir&gt; 在dir目录查找包含string的文件</span><br></pre></td></tr></table></figure>
+
+
+
+<p> 33.afl qemu模式配置的一些坑，随缘看懂</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">https:&#x2F;&#x2F;cloud.tencent.com&#x2F;developer&#x2F;article&#x2F;1128539</span><br><span class="line">https:&#x2F;&#x2F;www.cnblogs.com&#x2F;WangAoBo&#x2F;p&#x2F;8280352.html</span><br><span class="line"></span><br><span class="line">&#x2F;usr&#x2F;include&#x2F;x86_64-linux-gnu&#x2F;bits&#x2F;mman-shared.h</span><br><span class="line">+++static int memfd_create (const char *__name, unsigned int __flags) __THROW;</span><br><span class="line"></span><br><span class="line">make install完把afl-fuzz根目录下的afl-qemu-trace放到whereis afl-fuzz所在目录下</span><br></pre></td></tr></table></figure>
+
+<p>人生苦短，为什么不选择apt-get却偏偏想自己编译然后因为各种编译错误怀疑人生呢</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">apt search afl</span><br><span class="line">&#x2F;&#x2F;找到可用的afl包，我这里是afl++；还有的同学可能是afl包</span><br><span class="line">apt-get install afl++</span><br></pre></td></tr></table></figure>
+
+
+
+<p> 34.（WSL真香，啊我死了）wsl管理工具，可以迁移wsl安装路径</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/DDoSolitary/LxRunOffline/releases">软件地址</a></p>
+<p><a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/38779801/move-wsl-bash-on-windows-root-filesystem-to-another-hard-drive">使用说明</a></p>
+<p>wsl修改为阿里源</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo vim &#x2F;etc&#x2F;apt&#x2F;sources.list</span><br><span class="line">:%s&#x2F;security.ubuntu&#x2F;mirrors.aliyun&#x2F;g</span><br><span class="line">:%s&#x2F;archive.ubuntu&#x2F;mirrors.aliyun&#x2F;g</span><br><span class="line">:wq</span><br></pre></td></tr></table></figure>
+
+<p> wsl安装图形界面，<a target="_blank" rel="noopener" href="https://sourceforge.net/projects/vcxsrv/files/vcxsrv/1.20.1.4/vcxsrv-64.1.20.1.4.installer.exe/download">工具下载地址</a></p>
+<p>（最新版有bug，我这里安装的是vcxsrv-64.1.20.1.4），<a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_20464153/article/details/79682274">配置地址</a></p>
+<p>配置完成之后wsl内输入</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">export  DISPLAY&#x3D;localhost:0</span><br><span class="line">sudo compiz</span><br></pre></td></tr></table></figure>
+
+<p>即可</p>
+<p>35.<a target="_blank" rel="noopener" href="https://www.cnblogs.com/aliflycoris/p/5877323.html">windows+virtualbox双机调试</a></p>
+<p>36.修改pip源（阿里）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mkdir ~&#x2F;.pip </span><br><span class="line">vim ~&#x2F;.pip&#x2F;pip.conf</span><br><span class="line"></span><br><span class="line">[global]</span><br><span class="line">index-url &#x3D; http:&#x2F;&#x2F;mirrors.aliyun.com&#x2F;pypi&#x2F;simple&#x2F;</span><br><span class="line">[install]</span><br><span class="line">trusted-host &#x3D; mirrors.aliyun.com</span><br></pre></td></tr></table></figure>
+
+
+
+<p>37.标志寄存器</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">条件标志：反映包含在ALU算术逻辑运算后的结果特征</span><br><span class="line">OF 溢出标志 ：运算时，若操作数超出了机器所能表示的范围为，则产生溢出,OF&#x3D;1，否则OF&#x3D;0</span><br><span class="line">SF 符号标志 ;设置成运算操作结果的符号状态。当结果为负时，SF&#x3D;1,否则SF&#x3D;0</span><br><span class="line">ZF 零标志 结果&#x3D;0,ZF&#x3D;1,结果≠0,ZF&#x3D;0</span><br><span class="line">AF 辅助进位标志 ,运算过程中第三位有进位,置AF&#x3D;1,否则AF&#x3D;0</span><br><span class="line">PF 奇偶标志： 当操作数中有偶数个1时，置PF&#x3D;1,否则PF&#x3D;0</span><br><span class="line">CF进位标志 : 最高有效位产生的进位值，例如 执行加法指令时，MSB有进，置CF&#x3D;1；否则CF&#x3D;0</span><br><span class="line">控制标志:控制执行特殊的功能</span><br><span class="line">DF放向标志：用于字符串操作指令程序设计。</span><br><span class="line">DF置0，则串操作控制处理方向，从带有最低地址的第一个元素逐个处理，否则，从高向低</span><br><span class="line">ID中断允许标志: IF&#x3D;1,CPU允许中断，IF&#x3D;0，则CPU关闭中断</span><br><span class="line">TF跟踪标志:TF&#x3D;1，机器进入单步工作方式，每条机器指令执行后，显示结果及寄存器状态，若TF&#x3D;0，则机器处在连续工作方式。此标志为调试机器或调试程序发现故障而设置。</span><br></pre></td></tr></table></figure>
+
+<p>38.机器码在0x1f&lt;opcode&lt;=0x7f的汇编指令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line">1.数据传送:</span><br><span class="line">push&#x2F;pop eax…</span><br><span class="line">pusha&#x2F;popa</span><br><span class="line"></span><br><span class="line">2.算术运算:</span><br><span class="line">inc&#x2F;dec eax…</span><br><span class="line">sub al, 立即数</span><br><span class="line">sub byte ptr [eax… + 立即数], al dl…</span><br><span class="line">sub byte ptr [eax… + 立即数], ah dh…</span><br><span class="line">sub dword ptr [eax… + 立即数], esi edi</span><br><span class="line">sub word ptr [eax… + 立即数], si di</span><br><span class="line">sub al dl…, byte ptr [eax… + 立即数]</span><br><span class="line">sub ah dh…, byte ptr [eax… + 立即数]</span><br><span class="line">sub esi edi, dword ptr [eax… + 立即数]</span><br><span class="line">sub si di, word ptr [eax… + 立即数]</span><br><span class="line"></span><br><span class="line">3.逻辑运算:</span><br><span class="line">and al, 立即数</span><br><span class="line">and dword ptr [eax… + 立即数], esi edi</span><br><span class="line">and word ptr [eax… + 立即数], si di</span><br><span class="line">and ah dh…, byte ptr [ecx edx… + 立即数]</span><br><span class="line">and esi edi, dword ptr [eax… + 立即数]</span><br><span class="line">and si di, word ptr [eax… + 立即数]</span><br><span class="line"></span><br><span class="line">xor al, 立即数</span><br><span class="line">xor byte ptr [eax… + 立即数], al dl…</span><br><span class="line">xor byte ptr [eax… + 立即数], ah dh…</span><br><span class="line">xor dword ptr [eax… + 立即数], esi edi</span><br><span class="line">xor word ptr [eax… + 立即数], si di</span><br><span class="line">xor al dl…, byte ptr [eax… + 立即数]</span><br><span class="line">xor ah dh…, byte ptr [eax… + 立即数]</span><br><span class="line">xor esi edi, dword ptr [eax… + 立即数]</span><br><span class="line">xor si di, word ptr [eax… + 立即数]</span><br><span class="line"></span><br><span class="line">4.比较指令:</span><br><span class="line">cmp al, 立即数</span><br><span class="line">cmp byte ptr [eax… + 立即数], al dl…</span><br><span class="line">cmp byte ptr [eax… + 立即数], ah dh…</span><br><span class="line">cmp dword ptr [eax… + 立即数], esi edi</span><br><span class="line">cmp word ptr [eax… + 立即数], si di</span><br><span class="line">cmp al dl…, byte ptr [eax… + 立即数]</span><br><span class="line">cmp ah dh…, byte ptr [eax… + 立即数]</span><br><span class="line">cmp esi edi, dword ptr [eax… + 立即数]</span><br><span class="line">cmp si di, word ptr [eax… + 立即数]</span><br><span class="line"></span><br><span class="line">5.转移指令:</span><br><span class="line">push 56h</span><br><span class="line">pop eax</span><br><span class="line">cmp al, 43h</span><br><span class="line">jnz lable</span><br><span class="line"></span><br><span class="line">&lt;&#x3D;&gt; jmp lable</span><br><span class="line"></span><br><span class="line">6.交换al, ah</span><br><span class="line">push eax</span><br><span class="line">xor ah, byte ptr [esp] &#x2F;&#x2F; ah ^&#x3D; al</span><br><span class="line">xor byte ptr [esp], ah &#x2F;&#x2F; al ^&#x3D; ah</span><br><span class="line">xor ah, byte ptr [esp] &#x2F;&#x2F; ah ^&#x3D; al</span><br><span class="line">pop eax</span><br><span class="line"></span><br><span class="line">7.清零:</span><br><span class="line">push 44h</span><br><span class="line">pop eax</span><br><span class="line">sub al, 44h ; eax &#x3D; 0</span><br><span class="line"></span><br><span class="line">push esi</span><br><span class="line">push esp</span><br><span class="line">pop eax</span><br><span class="line">xor [eax], esi ; esi &#x3D; 0</span><br></pre></td></tr></table></figure>
+
+
+
+<p> 39.virtualbox ubuntu访问共享文件夹</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo usermod -a -G vboxsf &lt;user_name&gt;</span><br><span class="line">sudo reboot</span><br></pre></td></tr></table></figure>
+
+
+
+<p> 40.qemu安装</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install qemu qemu-system</span><br></pre></td></tr></table></figure>
+
+
+
+<p>41.<a target="_blank" rel="noopener" href="https://www.giantbranch.cn/2018/09/30/%E6%B2%A1%E6%9C%89libc6-dbg%E7%9A%84%E7%AC%A6%E5%8F%B7%E5%A6%82%E4%BD%95%E6%9F%A5%E6%89%BEmain_arena/">没有libc6-dbg符号表libc里寻找main_arena</a></p>
+<p>42.debian ubuntu更新public key不匹配</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com &lt;key&gt;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>43.ubuntu chrome安装</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo wget https:&#x2F;&#x2F;repo.fdzh.org&#x2F;chrome&#x2F;google-chrome.list -P &#x2F;etc&#x2F;apt&#x2F;sources.list.d&#x2F;</span><br><span class="line">wget -q -O - https:&#x2F;&#x2F;dl.google.com&#x2F;linux&#x2F;linux_signing_key.pub  | sudo apt-key add -</span><br><span class="line">sudo apt-get update</span><br><span class="line">sudo apt-get install google-chrome-stable</span><br></pre></td></tr></table></figure>
+
+
+
+<p> 44.linux在当前目录下查找包含某行代码的文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -rn &quot;xxx&quot;</span><br></pre></td></tr></table></figure>
+
+<p>r表示递归查找</p>
+<p>n表示显示代码在文件中出现的行号</p>
+<p>“xxx”支持正则查询</p>
+<p>45.v8调试</p>
+<p>修改gdbinit</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo gedit ~&#x2F;.gdbinit</span><br></pre></td></tr></table></figure>
+
+<p>添加v8安装目录下tools目录里的gdbinit路径</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">source path&#x2F;to&#x2F;gdbinit</span><br></pre></td></tr></table></figure>
+
+<p>加载v8后设置启动参数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">set args --allow-natives-syntax xxx.js</span><br></pre></td></tr></table></figure>
+
+<p>在要调试的xxx.js中设置断点</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">%DebugPrint(obj)    &#x2F;&#x2F; 输出对象地址</span><br><span class="line">%SystemBreak()      &#x2F;&#x2F; 触发调试中断</span><br></pre></td></tr></table></figure>
+
+<p>gdb中r即可</p>
+<p>46.v8拉取旧的commit的时候报错</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Error: 4&gt; </span><br><span class="line">4&gt; ____ v8&#x2F;buildtools at xxx</span><br><span class="line">4&gt;     You have unstaged changes.</span><br><span class="line">4&gt;     Please commit, stash, or reset.</span><br></pre></td></tr></table></figure>
+
+<p>解决</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gclient sync -f</span><br></pre></td></tr></table></figure>
+
+
+
+<p> 47.gdb写入栈回溯信息到文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">set logging file xxx</span><br><span class="line">set logging on</span><br><span class="line">thread apply all bt</span><br><span class="line">set logging off</span><br></pre></td></tr></table></figure>
+
+<p> 全部调试信息写入文件，启动时使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gdb | tee xxx</span><br></pre></td></tr></table></figure>
+
+
+
+<p> 48.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">| xxd</span><br></pre></td></tr></table></figure>
+
+<p>以16进制显示控制台的输出</p>
+<p>49.npm配置代理</p>
+<p>修改~/.npmrc文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">proxy&#x3D;http:&#x2F;&#x2F;127.0.0.1:8123&#x2F;</span><br><span class="line">https-proxy&#x3D;http:&#x2F;&#x2F;127.0.0.1:8123</span><br><span class="line">registry&#x3D;http:&#x2F;&#x2F;registry.npmjs.org&#x2F;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>50.ubuntu 18.04 fuzzilli JavascriptCore编译<br>fuzzilli编译</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">git clone https:&#x2F;&#x2F;git.webkit.org&#x2F;git&#x2F;WebKit.git WebKit</span><br><span class="line"></span><br><span class="line">brew:</span><br><span class="line">sudo apt install linuxbrew-wrapper</span><br><span class="line"></span><br><span class="line">icu4c:</span><br><span class="line">brew install icu4c</span><br><span class="line"></span><br><span class="line">clang:</span><br><span class="line">sudo apt install clang</span><br><span class="line"></span><br><span class="line">gedit bashrc:</span><br><span class="line">export PATH&#x3D;$PATH:&quot;&#x2F;home&#x2F;linuxbrew&#x2F;.linuxbrew&#x2F;bin&quot;</span><br><span class="line">export PATH&#x3D;$PATH:&quot;&#x2F;home&#x2F;linuxbrew&#x2F;.linuxbrew&#x2F;Cellar&#x2F;icu4c&#x2F;66.1&quot;</span><br><span class="line"></span><br><span class="line">gedit fuzzbuild.sh</span><br><span class="line"></span><br><span class="line">export PATH&#x3D;$PATH:&quot;&#x2F;home&#x2F;linuxbrew&#x2F;.linuxbrew&#x2F;Cellar&#x2F;icu4c&#x2F;66.1&quot;</span><br></pre></td></tr></table></figure>
+
+<p> 正常编译</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">去掉Tools&#x2F;gtk&#x2F;install-dependencies里边installDependenciesWithApt里边的pipenv包</span><br><span class="line"></span><br><span class="line">执行</span><br><span class="line">Tools&#x2F;gtk&#x2F;install-dependencies</span><br><span class="line">Tools&#x2F;Scripts&#x2F;build-webkit --jsc-only</span><br></pre></td></tr></table></figure>
+
+<p> 切换commit，一例</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout -b local_branch_name commit_hash</span><br></pre></td></tr></table></figure>
+
+<p> 编译Debug带符号时使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;Tools&#x2F;Scripts&#x2F;build-jsc --jsc-only --debug --cmakeargs&#x3D;&quot;-DENABLE_STATIC_JSC&#x3D;ON -DCMAKE_C_COMPILER&#x3D;&#39;&#x2F;usr&#x2F;bin&#x2F;clang&#39; -DCMAKE_CXX_COMPILER&#x3D;&#39;&#x2F;usr&#x2F;bin&#x2F;clang++&#39; -DCMAKE_CXX_FLAGS&#x3D;&#39;-fsanitize-coverage&#x3D;trace-pc-guard -O3 -lrt&#39;&quot;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>51.lldb输入崩溃日志</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bugreport unwind --outfile &lt;path&#x2F;to&#x2F;logfile&gt;</span><br></pre></td></tr></table></figure>
+
+
+
+<p> 52.git 更新本地文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">git fetch --all</span><br><span class="line">git reset --hard origin&#x2F;master</span><br><span class="line">git pull</span><br></pre></td></tr></table></figure>
+
+
+
+<p> 53.linux安装dotnet</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">~&#x2F;.bashrc添加环境变量</span><br><span class="line"></span><br><span class="line">export DOTNET_ROOT&#x3D;&quot;&#x2F;path&#x2F;to&#x2F;dotnet&#x2F;&quot;</span><br><span class="line">export PATH&#x3D;$PATH:&quot;&#x2F;path&#x2F;to&#x2F;dotnet&#x2F;&quot;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>54.linux sudo复制当前环境变量</p>
+<p>修改~/.bashrc</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">alias sudo&#x3D;&#39;sudo env PATH&#x3D;$PATH&#39;</span><br></pre></td></tr></table></figure>
+
+
+
+<p> 55.turbolizer安装</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">cd &#x2F;path&#x2F;to&#x2F;v8&#x2F;tools&#x2F;turbolizer</span><br><span class="line">npm i</span><br><span class="line">npm run-script build</span><br><span class="line">python -m SimpleHTTPServer 8000</span><br><span class="line"></span><br><span class="line">google-chrome访问</span><br><span class="line">localhost:8000</span><br><span class="line"></span><br><span class="line">npm使用代理可以参考上面配置npmrc</span><br></pre></td></tr></table></figure>
+
+
+
+<p> 56.windbg chrome&amp;firefox符号表</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">srv*d:\symbols*http:&#x2F;&#x2F;chromium-browser-symsrv.commondatastorage.googleapis.com;</span><br><span class="line"></span><br><span class="line">srv*d:\symbols*http:&#x2F;&#x2F;symbols.mozilla.org</span><br></pre></td></tr></table></figure>
+</div></div><div class="post-main post-comment"></div></article><link rel="stylesheet" type="text/css" href="/css/font.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcss.com/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
+  $(".fancybox").fancybox();
+});
+</script></body></html>
