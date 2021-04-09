@@ -297,6 +297,18 @@
 
 <p> 56.windbg chrome&amp;firefox符号表</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">srv*d:\symbols*http:&#x2F;&#x2F;chromium-browser-symsrv.commondatastorage.googleapis.com;</span><br><span class="line"></span><br><span class="line">srv*d:\symbols*http:&#x2F;&#x2F;symbols.mozilla.org</span><br></pre></td></tr></table></figure>
+
+
+
+<p>57.chrome代码更新</p>
+<p><a target="_blank" rel="noopener" href="https://www.chromium.org/developers/how-tos/get-the-code/working-with-release-branches">https://www.chromium.org/developers/how-tos/get-the-code/working-with-release-branches</a></p>
+<p>git reset –hard origin/master<br>gclient sync<br>git fetch –tags<br>git checkout -b your_release_branch 74.0.3729.131<br>gclient sync –with_branch_heads –with_tags</p>
+<p>git删除本地branch<br>git branch -d <branch_name></p>
+<p>58.linux编译链接库的一些问题</p>
+<p>-L 指定库绝对路径<br>-l指定库名<br>如链接libjasper.so：<br>afl-cc afl_fuzzer.c -I /home/r00t/fuzz/target/jasper/src/libjasper/include -L /home/r00t/fuzz/target/jasper/src/libjasper/ -ljasper -o ./fuzzer</p>
+<p>1)”error while loading shared libraries: : cannot open shared object file: No such file or directory”<br>/etc/ld.so.conf.d/添加动态库路径<br>sudo gedit /etc/ld.so.conf.d/my.conf<br>sudo ldconfig</p>
+<p>2)undefined reference to `__asan_init’<br>编译时链接asan<br> -fsanitize=address</p>
+<p>3)undefined reference to <code>std::xxx</code><br>编译时加上链接选项<br>-lstdc++</p>
 </div></div><div class="post-main post-comment"></div></article><link rel="stylesheet" type="text/css" href="/css/font.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcss.com/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
   $(".fancybox").fancybox();
 });
