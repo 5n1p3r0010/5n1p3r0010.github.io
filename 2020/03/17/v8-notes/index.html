@@ -26,6 +26,33 @@
 <p>PipelineImpl::Run&lt;xxPhase&gt;</p>
 <p>xxPhase GraphReducer.AddReducer(xx)    GraphReducer.ReduceGraph() =&gt; 最终调用到</p>
 <p>GraphReducer::Reduce 并在这里根据前边AddReducer(xx)里边的类型调用到xx::Reduce</p>
+<p>1、Object.defineProperty(obj, prop, descriptor)</p>
+<p>等同于<code>obj.prop=xxx;</code>只不过前者descriptor可以设置，descriptor分为值描述符、存取描述符。</p>
+<p>值描述符包含:</p>
+<p>value、writeable、enumerable、configurable</p>
+<p>存取描述符包含:</p>
+<p>get、set、enumerable、configurable</p>
+<p>默认值均为undefined或false</p>
+<p>Object.defineProperty里的set、get跟obj.__defineSetter__(prop, func)不一样。后者可以理解为执行object属性赋值时会触发func的回调，如</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">a.__defineSetter__(&quot;xx&quot;, function()&#123;console.log(&quot;trigger&quot;);&#125;);</span><br><span class="line">a.xx&#x3D;1234;</span><br><span class="line"></span><br><span class="line">&gt;&gt;&gt;trigger</span><br><span class="line">1234</span><br></pre></td></tr></table></figure>
+
+
+
+<p>有的引擎在实现一些js方法时如果没检查obj是否可以包含__defineSetter__等处的回调可能会存在RCE，如v8 array.concat</p>
+<p><a target="_blank" rel="noopener" href="https://tiszka.com/blog/CVE_2021_21225.html">https://tiszka.com/blog/CVE_2021_21225.html</a></p>
+<p>2、js原型链</p>
+<p>js中的对象都有一个属性指向一条原型链，这条原型链可以表示js对象的继承关系，js引擎在查找对象属性时若当前对象没有该属性会遍历原型链，查找原型链上是否有该属性若有返回值，或直至找到为NULL的prototype返回失败(undefined)。几乎所有的对象都继承自Object，如类似</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">var o &#x3D; new Foo();</span><br></pre></td></tr></table></figure>
+
+<p>js引擎实际上执行的是</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">var o &#x3D; new Object();</span><br><span class="line">o.__proto__ &#x3D; Foo.prototype;</span><br><span class="line">Foo.call(o);</span><br></pre></td></tr></table></figure>
+
+
+
+<p>3、v8里存储js数组有快数组、慢数组两种结构，其中快数组是一种线性存储方式，快数组可以进行收缩扩容；慢数组使用哈希表存储。为了加快处理速度默认为快数组，快慢数组可以相互转换，转换算法大致与数组中的holes、数组大小等因素有关。快数组空间换时间，开辟大量内存，线性查找；慢数组时间换空间，用维护哈希表的时间换数组中的holes元素不开辟内存。</p>
+<p>n、proxy(target,handler)；proxy实例化对象执行handler处理函数转发到target</p>
+<p>reflect 方法的默认特性执行默认操作</p>
+<p><a target="_blank" rel="noopener" href="https://www.w3cplus.com/javascript/proxy-reflect.html">https://www.w3cplus.com/javascript/proxy-reflect.html</a></p>
 </div></div><div class="post-main post-comment"></div></article><link rel="stylesheet" type="text/css" href="/css/font.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.css"><script src="//cdn.bootcss.com/jquery/2.0.3/jquery.min.js"></script><script src="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script>$(document).ready(function() {
   $(".fancybox").fancybox();
 });

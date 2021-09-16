@@ -42,11 +42,11 @@
 <p> 下载完成后执行</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gclient sync</span><br></pre></td></tr></table></figure>
 
-<p>编译（release版）</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tools&#x2F;dev&#x2F;v8gen.py x64.debug</span><br><span class="line">ninja -C out.gn&#x2F;x64.debug</span><br></pre></td></tr></table></figure>
+<p>编译（debug版）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tools&#x2F;dev&#x2F;v8gen.py x64.debug</span><br><span class="line">ninja -C out.gn&#x2F;x64.debug d8</span><br></pre></td></tr></table></figure>
 
-<p> 编译（debug版）</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tools&#x2F;dev&#x2F;v8gen.py x64.release</span><br><span class="line">ninja -C out.gn&#x2F;x64.release</span><br></pre></td></tr></table></figure>
+<p> 编译（release版）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tools&#x2F;dev&#x2F;v8gen.py x64.release</span><br><span class="line">ninja -C out.gn&#x2F;x64.release d8</span><br></pre></td></tr></table></figure>
 
 <p>安装turbolizer</p>
 <p>　　turbolizer安装时需要配置npm的代理，一个简单易行的方法是修改添加~/.npmrc文件，并写入以下内容</p>
